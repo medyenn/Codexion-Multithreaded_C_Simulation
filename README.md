@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by mennih.*
+*This project has been created as part of the 42 curriculum by ENNEEX*
 
 # Codexion — Master the race for resources before the deadline masters you
 
