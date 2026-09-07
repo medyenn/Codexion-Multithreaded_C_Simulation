@@ -6,7 +6,7 @@
 /*   By: mennih < mennih@student.1337.ma>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/02 14:26:04 by mennih            #+#    #+#             */
-/*   Updated: 2026/09/06 20:07:43 by mennih           ###   ########.fr       */
+/*   Updated: 2026/09/07 15:44:12 by mennih           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,7 +61,7 @@ static int	parse_nums(int argc, char **argv, long long *vals)
 	{
 		if (!is_valid_uint(argv[i + 1]))
 		{
-			fprintf(stderr, "Error: arg %d must be >= 0.\n", i + 1);
+			fprintf(stderr, "Error: arg %d must be a positive int.\n", i + 1);
 			return (-1);
 		}
 		vals[i] = safe_atoll(argv[i + 1]);
