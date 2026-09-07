@@ -6,7 +6,7 @@
 /*   By: mennih < mennih@student.1337.ma>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/02 14:24:30 by mennih            #+#    #+#             */
-/*   Updated: 2026/09/07 02:05:46 by mennih           ###   ########.fr       */
+/*   Updated: 2026/09/07 22:59:30 by mennih           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,18 @@ static bool	take_dongles(t_coder *c)
 {
 	if (sim_is_stopped(c->sim))
 		return (false);
+	if (c->sim->n == 1)
+	{
+		pthread_mutex_lock(&c->sim->arb_mutex);
+		c->left->in_use = true;
+		pthread_mutex_unlock(&c->sim->arb_mutex);
+		log_event(c->sim, c->id, "has taken a dongle");
+		pthread_mutex_lock(&c->cond_mutex);
+		while (!sim_is_stopped(c->sim))
+			pthread_cond_wait(&c->cond, &c->cond_mutex);
+		pthread_mutex_unlock(&c->cond_mutex);
+		return (false);
+	}
 	c->ticket = get_time_ms();
 	dongle_request(c->sim, c);
 	if (sim_is_stopped(c->sim))

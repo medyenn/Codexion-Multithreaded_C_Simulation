@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   8_monitor.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mennih < mennih@student.1337.ma>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/02 14:25:59 by mennih            #+#    #+#             */
-/*   Updated: 2026/09/07 14:02:03 by marvin           ###   ########.fr       */
+/*   Updated: 2026/09/07 22:59:20 by mennih           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,6 @@ bool	all_compiled(t_sim *sim)
 int	scan_coders(t_sim *sim, long long *wake_us)
 {
 	long long	now;
-	long long	start;
 	long long	remain;
 	int			i;
 	int			burned;
@@ -44,10 +43,7 @@ int	scan_coders(t_sim *sim, long long *wake_us)
 	i = 0;
 	while (i < sim->n)
 	{
-		pthread_mutex_lock(&sim->coders[i].cond_mutex);
-		start = sim->coders[i].last_compile_start;
-		pthread_mutex_unlock(&sim->coders[i].cond_mutex);
-		remain = start + sim->time_to_burnout - now;
+		remain = coder_deadline_remain(sim, i, now);
 		if (remain <= 0 && burned == 0)
 			burned = i + 1;
 		if (remain * 1000LL < *wake_us)

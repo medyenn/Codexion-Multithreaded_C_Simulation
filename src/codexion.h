@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   codexion.h                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: mennih < mennih@student.1337.ma>           +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/06 22:10:37 by mennih            #+#    #+#             */
-/*   Updated: 2026/09/07 14:01:26 by marvin           ###   ########.fr       */
+/*   Updated: 2026/09/07 22:59:52 by mennih           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,6 +119,7 @@ bool		all_compiled(t_sim *sim);
 int			scan_coders(t_sim *sim, long long *wake_us);
 
 void		grant_request(t_coder *c);
+long long	coder_deadline_remain(t_sim *sim, int i, long long now);
 void		free_dongle_arrays(t_sim *sim);
 void		handle_stop(t_sim *sim, int burned);
 long long	monitor_tick(t_sim *sim);
