@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Codexion — The Master Course</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161923; --panel2:#1b1f2b; --ink:#e7e9ee; --muted:#9aa3b2;
+    --accent:#7dd3fc; --accent2:#f0abfc; --good:#86efac; --bad:#fca5a5; --warn:#fde68a;
+    --code-bg:#0b0d12; --border:#2a2f3d;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:40px 24px 120px}
+  h1{font-size:2.1rem;margin-bottom:.2em}
+  h1 .sub{display:block;font-size:1rem;color:var(--muted);font-weight:400;margin-top:.4em}
+  h2{
+    font-size:1.5rem;margin-top:3rem;padding-bottom:.4rem;border-bottom:2px solid var(--border);
+    color:var(--accent);
+  }
+  h2 .step-tag{
+    display:inline-block;background:var(--accent);color:#08131a;font-weight:800;
+    border-radius:6px;padding:2px 10px;font-size:.8rem;margin-right:10px;vertical-align:middle;
+  }
+  h3{font-size:1.15rem;color:var(--accent2);margin-top:1.8rem}
+  h4{font-size:1rem;color:var(--ink);margin-top:1.3rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  p{color:#d7dae2}
+  code{
+    background:var(--code-bg);color:#c9f7c9;padding:1px 6px;border-radius:4px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;
+  }
+  pre{
+    background:var(--code-bg);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-size:.86rem;line-height:1.55;
+  }
+  pre code{background:none;padding:0;color:#dfe6e9}
+  .kw{color:#7dd3fc}.fn{color:#fbbf24}.str{color:#86efac}.cm{color:#6b7280;font-style:italic}
+  .note, .warn, .defend, .fix{
+    border-radius:10px;padding:14px 18px;margin:16px 0;border:1px solid var(--border);
+  }
+  .note{background:#0d2233;border-color:#164e63}
+  .warn{background:#2a1f0d;border-color:#7c5a10}
+  .defend{background:#241329;border-color:#6d28d9}
+  .fix{background:#2a1010;border-color:#7f1d1d}
+  .note b, .warn b, .defend b, .fix b{display:block;margin-bottom:6px;font-size:.78rem;
+    letter-spacing:.06em;text-transform:uppercase;}
+  .note b{color:var(--accent)} .warn b{color:var(--warn)} .defend b{color:var(--accent2)} .fix b{color:var(--bad)}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.92rem}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--accent)}
+  tr:nth-child(even){background:#141824}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 26px;margin:24px 0}
+  .toc a{color:var(--ink);text-decoration:none;display:block;padding:4px 0;border-bottom:1px dashed transparent}
+  .toc a:hover{color:var(--accent);border-color:var(--accent)}
+  .toc .lvl2{padding-left:18px;color:var(--muted);font-size:.92rem}
+  .pill{display:inline-block;font-size:.72rem;background:var(--panel2);border:1px solid var(--border);
+    border-radius:999px;padding:2px 10px;color:var(--muted);margin-left:6px}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0}
+  .flow .box{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:.85rem}
+  .flow .arrow{color:var(--muted)}
+  hr{border:none;border-top:1px solid var(--border);margin:2.5rem 0}
+  .field-table code{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Codexion — The Master Course
+<span class="sub">Your implementation, function by function, in the exact order the CPU actually executes it.</span>
+</h1>
+
+<div class="note">
+<b>How this course works</b>
+Nothing is explained before it is called. We start at <code>main()</code> and walk forward exactly the way
+execution does. Whenever a new function, struct field, mutex, or pthread call shows up for the first time,
+we stop and dissect it right there — what it is, why it exists, how it's implemented, what it returns, and
+how that return value steers the next step. After the walkthrough there are four dedicated deep-dive
+sections: the full concurrency-safety analysis, the FIFO→LIFO live recode, the burnout-timing defense, and
+a table correcting a few claims your own <code>README.md</code> makes that don't match your actual
+<code>src/</code> code (important — an evaluator who reads the code will notice).
+</div>
+
+<div class="toc">
+<a href="#s1">1. main() — the entry point</a>
+<a class="lvl2" href="#s2">2. parse_args() — turning argv into a t_sim</a>
+<a class="lvl2" href="#s3">3. sim_init() — building the world</a>
+<a class="lvl2" href="#s4">4. sim_run() — spawning the threads</a>
+<a class="lvl2" href="#s5">5. coder_routine() — the life of one coder thread</a>
+<a class="lvl2" href="#s6">6. monitor_routine() — the referee thread</a>
+<a class="lvl2" href="#s7">7. Joining, and sim_cleanup()</a>
+<a href="#s8">8. Deep dive — concurrency safety, Coffman conditions, races, starvation</a>
+<a href="#s9">9. README vs reality — what to actually say in defense</a>
+<a href="#s10">10. Live recode — turning "fifo" into "lifo"</a>
+<a href="#s11">11. Defense script — why the burnout timestamp isn't exactly on the dot</a>
+</div>
+
+<hr>
+
+<h2 id="s1"><span class="step-tag">STEP 1</span>main() — the entry point</h2>
+
+<pre><code><span class="kw">int</span> main(<span class="kw">int</span> argc, <span class="kw">char</span> **argv)
+{
+    t_sim   sim;
+    <span class="kw">int</span>     ret;
+
+    memset(&amp;sim, 0, sizeof(t_sim));
+    <span class="kw">if</span> (parse_args(argc, argv, &amp;sim) != 0)
+        return (1);
+    <span class="kw">if</span> (sim.compiles_required == 0)
+        return (0);
+    <span class="kw">if</span> (sim_init(&amp;sim) != 0) { ... return (1); }
+    ret = sim_run(&amp;sim);
+    sim_cleanup(&amp;sim);
+    <span class="kw">if</span> (ret != 0) return (1);
+    return (0);
+}</code></pre>
+
+<p><code>t_sim sim</code> is your <b>entire universe</b> — one struct, allocated once on <code>main()</code>'s stack,
+that every thread you spawn later will receive a pointer to. Nothing else is global. That single design choice
+is why you can honestly say "no global mutable state" when the correction sheet's <em>Global</em> question asks
+about it: the coders and the monitor never touch a file-scope variable, they all dereference the same
+<code>t_sim *sim</code> passed to them.</p>
+
+<p><code>memset(&amp;sim, 0, sizeof(t_sim))</code> zero-initializes every field before anything else touches it —
+this matters because <code>sim.stopped</code>, <code>sim.heap_size</code>, all the pointers
+(<code>coders</code>, <code>dongles</code>, <code>threads</code>, <code>heap</code>, <code>pending</code>)
+start at <code>false</code> / <code>0</code> / <code>NULL</code>. If <code>sim_init()</code> fails halfway,
+<code>sim_cleanup()</code> can safely call <code>free()</code> on whatever is still <code>NULL</code> because
+every cleanup function checks the pointer before freeing it.</p>
+
+<p>Three calls, three possible exits:</p>
+<ul>
+<li><code>parse_args()</code> fails → exit 1 immediately, nothing was ever allocated.</li>
+<li><code>compiles_required == 0</code> → the subject's own edge case: with 0 required compiles, every coder
+has already "compiled 0 times" the instant the program starts, so the simulation is trivially finished before
+a single thread exists. Exit 0, cleanly, with zero output.</li>
+<li>Otherwise: <code>sim_init()</code> builds every array/mutex/condvar, <code>sim_run()</code> actually spawns
+the threads and blocks until they all finish, then <code>sim_cleanup()</code> tears everything down
+unconditionally (even if <code>sim_run()</code> failed) — that's why <code>ret</code> is saved instead of
+returned immediately.</li>
+</ul>
+
+<hr>
+
+<h2 id="s2"><span class="step-tag">STEP 2</span>parse_args() — turning argv into a t_sim</h2>
+<p class="pill">src/1_parser.c</p>
+
+<p>Called with <code>argc, argv, &amp;sim</code>. Internally it's a three-function pipeline:</p>
+
+<div class="flow">
+<div class="box">parse_nums()</div><div class="arrow">→</div>
+<div class="box">is_valid_uint() × 7</div><div class="arrow">→</div>
+<div class="box">safe_atoll() × 7</div><div class="arrow">→</div>
+<div class="box">parse_sched()</div>
+</div>
+
+<h4>parse_nums()</h4>
+<p>First checks <code>argc != 9</code> (program name + 8 real arguments) and bails with a usage message
+otherwise. Then it loops <code>i</code> from 0 to 6 over the seven <em>numeric</em> arguments
+(everything except the scheduler string) and for each one:</p>
+<ol>
+<li><code>is_valid_uint(argv[i+1])</code> — rejects empty strings, a lone <code>"+"</code>, and any character
+outside <code>'0'..'9'</code> (a leading <code>+</code> is tolerated). This is what makes
+<code>./codexion -1 800 ...</code> fail correctly: <code>'-'</code> is not a digit, so it's rejected before
+any arithmetic happens — you never even try to interpret a negative number.</li>
+<li><code>safe_atoll(argv[i+1])</code> — a hand-rolled <code>atoll</code> that accumulates digit by digit and
+bails with <code>-1</code> the moment <code>result &gt; INT_MAX</code>. That guards against integer overflow
+silently wrapping a huge string like <code>99999999999999999999</code> into a small, wrong, positive number.</li>
+<li>If the returned value is negative (meaning it overflowed), that argument is rejected too.</li>
+</ol>
+
+<h4>parse_sched()</h4>
+<p>A plain <code>strcmp</code> against <code>"fifo"</code> / <code>"edf"</code>, writing
+<code>sim->scheduler</code> as the enum <code>POLICY_FIFO</code> or <code>POLICY_EDF</code>. Anything else —
+including your test case <code>"random"</code> — falls into the <code>else</code> branch, prints the error,
+and returns <code>-1</code>.</p>
+
+<h4>parse_args() itself</h4>
+<p>After <code>parse_nums()</code> succeeds it adds two more semantic checks that aren't just "is this a
+number": <code>number_of_coders &gt;= 1</code> and <code>time_to_burnout &gt;= 1</code>. Only then does it
+call <code>parse_sched()</code>, and only if <em>that</em> succeeds does it commit the parsed values into
+<code>sim</code>'s fields (<code>sim->n</code>, <code>sim->time_to_burnout</code>, etc.). This order matters
+for a subtle but real reason: you never partially populate <code>sim</code> with values that came from an
+otherwise-invalid command line.</p>
+
+<div class="note"><b>Return value that steers the pipeline</b>
+<code>parse_args()</code> returns <code>0</code> or <code>-1</code>. <code>main()</code> uses that return
+value as the single gate for whether <code>sim</code> is trustworthy enough to hand to <code>sim_init()</code>.
+</div>
+
+<hr>
+
+<h2 id="s3"><span class="step-tag">STEP 3</span>sim_init() — building the world</h2>
+<p class="pill">src/2_initializer.c</p>
+
+<pre><code><span class="kw">int</span> sim_init(t_sim *sim)
+{
+    sim->stopped = <span class="kw">false</span>;
+    sim->start_time_ms = get_time_ms();
+    <span class="kw">if</span> (init_mutexes(sim) != 0) return (-1);
+    <span class="kw">if</span> (init_dongles(sim) != 0) { ...destroy mutexes...; return (-1); }
+    sim->coders = malloc(...);
+    <span class="kw">if</span> (!sim->coders || init_coders_loop(sim) != 0) { sim_cleanup(sim); return (-1); }
+    sim->threads = malloc(...);
+    <span class="kw">if</span> (!sim->threads) { sim_cleanup(sim); return (-1); }
+    return (0);
+}</code></pre>
+
+<p><code>get_time_ms()</code> is called for the first time here (defined in <code>utils.c</code>):</p>
+<pre><code><span class="kw">long long</span> get_time_ms(<span class="kw">void</span>)
+{
+    <span class="kw">struct</span> timeval tv;
+    gettimeofday(&amp;tv, NULL);
+    return ((<span class="kw">long long</span>)tv.tv_sec * 1000LL + (<span class="kw">long long</span>)tv.tv_usec / 1000LL);
+}</code></pre>
+<p>It reads the wall clock via <code>gettimeofday</code> and folds seconds+microseconds into one
+millisecond-resolution <code>long long</code>. <code>sim->start_time_ms</code> is your <b>t=0</b>. Every
+log line later prints <code>sim_elapsed(sim) = get_time_ms() - sim->start_time_ms</code>, which is why your
+output starts at <code>0</code> regardless of wall-clock time.</p>
+
+<h4>init_mutexes()</h4>
+<p>Three global <code>pthread_mutex_t</code> objects are created with <code>pthread_mutex_init(&amp;m, NULL)</code>
+(the <code>NULL</code> attribute argument means "default mutex type" — non-recursive, non-robust, the
+standard fast mutex):</p>
+<table>
+<tr><th>Mutex</th><th>Protects</th></tr>
+<tr><td><code>log_mutex</code></td><td>stdout — guarantees no two <code>printf</code> calls interleave</td></tr>
+<tr><td><code>stop_mutex</code></td><td>the single boolean <code>sim->stopped</code></td></tr>
+<tr><td><code>arb_mutex</code></td><td><b>the "arbitration" lock</b> — the dongle array, the request heap, and the pending scratch array, all together</td></tr>
+</table>
+<p>If any <code>pthread_mutex_init</code> call fails, the function unwinds and destroys whatever it already
+created before returning <code>-1</code> — no half-initialized mutex is ever left behind.</p>
+
+<h4>init_dongles()</h4>
+<p>Allocates three arrays of length <code>sim->n</code> in one shot: <code>sim->dongles</code>,
+<code>sim->heap</code>, <code>sim->pending</code>. <code>sim->heap_cap = sim->n</code> — the request heap can
+never need to hold more than <code>n</code> entries, because there are only <code>n</code> coders and each
+one can have at most one outstanding request at a time (a coder blocks on its own request before making
+another). This is why the heap array is fixed-size and never needs to grow.</p>
+<p>Then it loops over the array and calls <code>dongle_init(&amp;sim->dongles[i], i)</code> — this is the
+first time we see the <code>t_dongle</code> struct populated:</p>
+<pre><code><span class="kw">void</span> dongle_init(t_dongle *d, <span class="kw">int</span> id)
+{
+    d->id = id;
+    d->in_use = <span class="kw">false</span>;
+    d->release_time = 0;
+}</code></pre>
+<p><code>release_time == 0</code> is a sentinel meaning "never used yet" — you'll see it checked in
+<code>dongle_ready()</code> later (Step 5) to skip the cooldown check entirely for a dongle that's brand new.</p>
+
+<h4>init_coders_loop() → init_coder()</h4>
+<p>For each index <code>i</code> in <code>0..n-1</code>, <code>init_coder</code> fills a <code>t_coder</code>:</p>
+<pre><code>sim->coders[i].id     = i + 1;                       <span class="cm">// human-facing id, 1-based</span>
+sim->coders[i].left   = &amp;sim->dongles[i];
+sim->coders[i].right  = &amp;sim->dongles[(i + 1) % sim->n];
+sim->coders[i].last_compile_start = sim->start_time_ms;
+sim->coders[i].compile_count = 0;
+sim->coders[i].ticket = 0;
+sim->coders[i].granted = <span class="kw">false</span>;
+sim->coders[i].burned_out = <span class="kw">false</span>;
+sim->coders[i].sim = sim;</code></pre>
+<p>This is the whole "N coders around a circular table, N dongles between them" model: coder <code>i</code>
+(0-indexed) owns the dongle to its left at index <code>i</code>, and shares its right dongle with the next
+coder — <code>(i + 1) % sim->n</code> wraps the last coder's right dongle back to dongle <code>0</code>,
+closing the circle. <b>Special case:</b> when <code>n == 1</code>, <code>left</code> and <code>right</code>
+both point at <code>dongles[0]</code> — the same dongle. That single fact is what makes the
+<code>1 800 200 200 200 10 0 fifo</code> reference case mathematically impossible to satisfy: a coder that
+needs two <em>distinct</em> dongles but whose left and right are the same physical dongle can never complete
+step 1 of the ritual. It's designed to burn out.</p>
+<p><code>last_compile_start</code> is seeded to <code>sim->start_time_ms</code> — i.e. "the burnout clock
+starts ticking from t=0", not from some later moment. This is exactly why the monitor thread (Step 6) can
+correctly declare a burnout even for a coder that hasn't compiled even once yet.</p>
+<p>Then, for the first time, per-coder synchronization primitives are created:</p>
+<pre><code><span class="kw">if</span> (pthread_cond_init(&amp;sim->coders[i].cond, NULL) != 0) <span class="kw">return</span> (-1);
+<span class="kw">if</span> (pthread_mutex_init(&amp;sim->coders[i].cond_mutex, NULL) != 0)
+{ pthread_cond_destroy(&amp;sim->coders[i].cond); <span class="kw">return</span> (-1); }</code></pre>
+<p>Every coder gets its <b>own private</b> condition variable + mutex pair. POSIX <em>requires</em> a condition
+variable to always be paired with the mutex that protects the predicate it waits on — you can't call
+<code>pthread_cond_wait</code> without holding a mutex. Here the predicate each coder waits on is
+"<code>c->granted == true</code> OR <code>sim is stopped</code>" — you'll see this used for real in Step 5.</p>
+<p>If <em>any</em> coder's init fails partway through the loop, <code>init_coders_loop</code> walks
+<b>backwards</b> from the failure point (<code>while (--i &gt;= 0) destroy...</code>), destroying only the
+cond/mutex pairs that were actually created, before freeing the coders array and returning <code>-1</code>.
+That backward-unwind pattern is the correct, leak-free way to fail out of a partially-completed loop of
+resource acquisitions.</p>
+
+<h4>Back in sim_init()</h4>
+<p>Finally, <code>sim->threads = malloc(sim->n * sizeof(pthread_t))</code> — just reserved storage for the
+<code>pthread_t</code> handles that <code>pthread_create()</code> will fill in during Step 4. If this
+allocation fails, <code>sim_cleanup(sim)</code> (Step 7) is invoked directly from here — which is exactly why
+<code>sim_cleanup()</code> has to be defensive about every pointer being possibly <code>NULL</code>.</p>
+
+<div class="note"><b>Return value that steers the pipeline</b>
+<code>sim_init()</code> returns <code>0</code> only if <em>every</em> mutex, condvar, and allocation in the
+chain succeeded. <code>main()</code> treats any non-zero return as fatal and never calls <code>sim_run()</code>.
+</div>
+
+<hr>
+
+<h2 id="s4"><span class="step-tag">STEP 4</span>sim_run() — spawning the threads</h2>
+<p class="pill">src/3_simulator.c</p>
+
+<pre><code><span class="kw">int</span> sim_run(t_sim *sim)
+{
+    <span class="kw">if</span> (start_coders(sim) != 0) <span class="kw">return</span> (-1);
+    <span class="kw">if</span> (pthread_create(&amp;sim->monitor_thread, NULL, monitor_routine, sim) != 0)
+    { ...stop, join coders, <span class="kw">return</span> (-1); }
+    i = 0;
+    <span class="kw">while</span> (i &lt; sim->n) pthread_join(sim->threads[i++], NULL);
+    pthread_join(sim->monitor_thread, NULL);
+    <span class="kw">return</span> (0);
+}</code></pre>
+
+<p>Before spawning threads, two tiny helpers appear that will be called constantly from now on:</p>
+<pre><code><span class="kw">bool</span> sim_is_stopped(t_sim *sim)
+{
+    <span class="kw">bool</span> stopped;
+    pthread_mutex_lock(&amp;sim->stop_mutex);
+    stopped = sim->stopped;
+    pthread_mutex_unlock(&amp;sim->stop_mutex);
+    <span class="kw">return</span> (stopped);
+}
+<span class="kw">void</span> sim_stop(t_sim *sim)
+{
+    pthread_mutex_lock(&amp;sim->stop_mutex);
+    sim->stopped = <span class="kw">true</span>;
+    pthread_mutex_unlock(&amp;sim->stop_mutex);
+}</code></pre>
+<p>This is the textbook fix for the classic "just read a bool from multiple threads" data race: without the
+mutex, one thread's write to <code>stopped</code> is not guaranteed to become visible to another thread's
+read in any bounded time (compilers/CPUs may cache it in a register), and a plain read/write pair on a shared
+variable without synchronization is undefined behavior in C's memory model regardless of whether it "usually
+works". Every single access to <code>sim->stopped</code> anywhere in the codebase goes through one of these
+two functions — there is no raw <code>sim->stopped</code> read outside of them.</p>
+
+<h4>start_coders()</h4>
+<p>Loops <code>i</code> from <code>0</code> to <code>n-1</code> calling:</p>
+<pre><code>pthread_create(&amp;sim->threads[i], NULL, coder_routine, &amp;sim->coders[i])</code></pre>
+<p><code>pthread_create</code>'s four arguments: where to store the new thread's id, thread attributes
+(<code>NULL</code> = default — joinable, default stack size), the function the new thread will start
+executing (<code>coder_routine</code>), and the single <code>void *</code> argument passed to it — here, a
+pointer to that coder's own <code>t_coder</code> slot. This is the moment <code>n</code> independent threads
+start running concurrently, each with its own call stack but all sharing the same <code>t_sim</code> through
+its <code>sim</code> pointer. If any <code>pthread_create</code> fails mid-loop, the code stops the simulation
+and joins the threads it already managed to start, cleaning up rather than leaking live threads.</p>
+<p>After all coder threads exist, <b>one more</b> thread is created: the monitor
+(<code>monitor_routine</code>, argument <code>sim</code> itself — the monitor doesn't belong to any single
+coder). So at the end of <code>sim_run()</code>'s setup phase you have <code>n + 1</code> threads running
+concurrently: <code>n</code> coders and 1 monitor, all racing against each other, all synchronized purely
+through the mutexes/condvars set up in Step 3.</p>
+<p><code>sim_run()</code> then blocks on <code>pthread_join()</code> for every coder thread in order, and
+finally for the monitor thread. <code>pthread_join</code> makes the calling thread (main) sleep until the
+target thread returns — this is how <code>main()</code> knows the whole simulation is actually finished
+before moving on to <code>sim_cleanup()</code>.</p>
+
+<hr>
+
+<h2 id="s5"><span class="step-tag">STEP 5</span>coder_routine() — the life of one coder thread</h2>
+<p class="pill">src/4_coder.c</p>
+
+<pre><code><span class="kw">void</span> *coder_routine(<span class="kw">void</span> *arg)
+{
+    t_coder *c = (t_coder *)arg;
+    t_sim   *sim = c->sim;
+    <span class="kw">while</span> (!sim_is_stopped(sim))
+        <span class="kw">if</span> (!coder_cycle(c, sim)) <span class="kw">break</span>;
+    <span class="kw">return</span> (NULL);
+}</code></pre>
+<p>This is the whole state machine: keep running compile→debug→refactor cycles until either the simulation is
+globally stopped, or <code>coder_cycle</code> itself says "no more work for you" (returns <code>false</code>).
+<code>coder_cycle</code> is the actual per-cycle logic:</p>
+
+<pre><code><span class="kw">static bool</span> coder_cycle(t_coder *c, t_sim *sim)
+{
+    pthread_mutex_lock(&amp;c->cond_mutex);
+    <span class="kw">if</span> (c->compile_count &gt;= sim->compiles_required)
+    { pthread_mutex_unlock(&amp;c->cond_mutex); <span class="kw">return</span> (<span class="kw">false</span>); }
+    pthread_mutex_unlock(&amp;c->cond_mutex);
+    <span class="kw">if</span> (!take_dongles(c)) <span class="kw">return</span> (<span class="kw">false</span>);
+    run_compile_phase(c, sim);
+    <span class="kw">if</span> (!run_debug_refactor(c, sim)) <span class="kw">return</span> (<span class="kw">false</span>);
+    pthread_mutex_lock(&amp;c->cond_mutex);
+    c->compile_count++;
+    pthread_mutex_unlock(&amp;c->cond_mutex);
+    <span class="kw">return</span> (<span class="kw">true</span>);
+}</code></pre>
+<p>Note <code>compile_count</code> is read/written exclusively under <code>c->cond_mutex</code> here — that's
+the same mutex the monitor thread will lock in Step 6 to read this exact field. Every access to
+<code>compile_count</code> and <code>last_compile_start</code> across the whole program goes through this
+lock, on both the writer side (the coder) and the reader side (the monitor). That's a real, complete
+data-race fix — not just "practically fine on x86".</p>
+
+<h3>5.1 — take_dongles(c): acquiring both resources</h3>
+<pre><code><span class="kw">static bool</span> take_dongles(t_coder *c)
+{
+    <span class="kw">if</span> (sim_is_stopped(c->sim)) <span class="kw">return</span> (<span class="kw">false</span>);
+    <span class="kw">if</span> (c->sim->n == 1)
+    {
+        pthread_mutex_lock(&amp;c->sim->arb_mutex);
+        c->left->in_use = <span class="kw">true</span>;
+        pthread_mutex_unlock(&amp;c->sim->arb_mutex);
+        log_event(c->sim, c->id, <span class="str">"has taken a dongle"</span>);
+        pthread_mutex_lock(&amp;c->cond_mutex);
+        <span class="kw">while</span> (!sim_is_stopped(c->sim))
+            pthread_cond_wait(&amp;c->cond, &amp;c->cond_mutex);
+        pthread_mutex_unlock(&amp;c->cond_mutex);
+        <span class="kw">return</span> (<span class="kw">false</span>);
+    }
+    c->ticket = get_time_ms();
+    dongle_request(c->sim, c);
+    <span class="kw">if</span> (sim_is_stopped(c->sim)) <span class="kw">return</span> (<span class="kw">false</span>);
+    log_event(c->sim, c->id, <span class="str">"has taken a dongle"</span>);
+    log_event(c->sim, c->id, <span class="str">"has taken a dongle"</span>);
+    <span class="kw">return</span> (<span class="kw">true</span>);
+}</code></pre>
+
+<div class="note"><b>Why two log lines</b>
+The correction sheet's "Less easy" benchmark explicitly checks that every <code>"is compiling"</code> line
+is immediately preceded by <em>exactly two</em> <code>"has taken a dongle"</code> lines for the same coder —
+one per dongle. You satisfy this literally: after a single successful <code>dongle_request()</code> call
+(which internally reserves <em>both</em> dongles atomically, see 5.2), you log the acquisition twice, once
+conceptually for the left dongle and once for the right. This is a logging convention, not two separate
+acquisition operations — the real, race-safe acquisition already happened as one atomic step inside
+<code>dongle_request()</code>.
+</div>
+
+<p>The <code>n == 1</code> branch is a dead end by design: it marks its one dongle in use, logs it took a
+dongle (only once — there's only one dongle to report), and then just parks on its own condition variable
+forever, until the simulation is stopped (which will happen — see the burnout defense in Section 11). It
+returns <code>false</code> unconditionally once woken, which propagates all the way up and ends the thread.</p>
+
+<h3>5.2 — dongle_request(): the heart of the arbitration system</h3>
+<p class="pill">src/5_dongle.c</p>
+<pre><code><span class="kw">void</span> dongle_request(t_sim *sim, t_coder *c)
+{
+    t_request req;
+    req.coder_id = c->id;
+    req.priority = c->ticket;
+    <span class="kw">if</span> (sim->scheduler == POLICY_EDF)
+        req.priority = c->last_compile_start + sim->time_to_burnout;
+    pthread_mutex_lock(&amp;c->cond_mutex);
+    c->granted = <span class="kw">false</span>;
+    pthread_mutex_unlock(&amp;c->cond_mutex);
+    pthread_mutex_lock(&amp;sim->arb_mutex);
+    heap_push(sim, req);
+    dispatch(sim);
+    pthread_mutex_unlock(&amp;sim->arb_mutex);
+    <span class="kw">if</span> (!coder_wait_grant(sim, c))
+    {
+        pthread_mutex_lock(&amp;sim->arb_mutex);
+        idx = heap_find(sim, c->id);
+        <span class="kw">if</span> (idx != -1) heap_remove(sim, idx);
+        pthread_mutex_unlock(&amp;sim->arb_mutex);
+    }
+}</code></pre>
+
+<p>First, the coder builds a <b>request ticket</b>: <code>t_request { priority, coder_id }</code>. The
+priority depends on the scheduler:</p>
+<ul>
+<li><b>FIFO:</b> <code>priority = c->ticket</code>, which was set one line earlier in <code>take_dongles</code>
+to <code>get_time_ms()</code> — literally "the wall-clock time this request was made". The smallest timestamp
+= the oldest request = served first. That's arrival-order fairness.</li>
+<li><b>EDF (Earliest Deadline First):</b> <code>priority = last_compile_start + time_to_burnout</code> — the
+exact millisecond this coder will burn out if it doesn't get served. The coder closest to burning out gets
+priority, regardless of when it asked.</li>
+</ul>
+
+<p>Then <code>c->granted = false</code> is reset under <code>c->cond_mutex</code> <em>before</em> the request
+is even pushed into the shared heap. This ordering is not an accident — see the race-condition callout below.</p>
+
+<p>The actual submission is one atomic transaction under <code>arb_mutex</code>:
+<code>heap_push(sim, req)</code> followed immediately by <code>dispatch(sim)</code>, both while holding the
+same lock. This means: from the moment the request enters the shared queue to the moment the system decides
+whether it can be granted right now, no other thread can touch the heap or the dongle states in between.
+There's no window where the request is "half-queued".</p>
+
+<div class="defend"><b>The lost-wakeup race that this code correctly avoids</b>
+A classic condition-variable bug: thread A checks "is my flag set? no" then goes to sleep — but thread B sets
+the flag and signals <em>in between</em> the check and the sleep, and the signal is lost forever because
+nobody was listening yet. Here it can't happen, because the flag (<code>c->granted</code>) is only ever read
+or written while holding <code>c->cond_mutex</code>, on both sides:
+<code>coder_wait_grant()</code> (the waiter) locks <code>cond_mutex</code>, then loops
+<code>while (!c->granted &amp;&amp; !stopped) pthread_cond_wait(...)</code> — and <code>pthread_cond_wait</code>
+atomically unlocks the mutex and sleeps as one indivisible kernel operation. <code>grant_request()</code>
+(the signaler, see 5.2b) also locks the very same <code>cond_mutex</code> before setting
+<code>granted = true</code> and calling <code>pthread_cond_signal</code>. So even in the worst-case
+scheduling — the grant happens the instant after the heap push, before the coder thread has even reached
+<code>coder_wait_grant()</code> — the flag is already <code>true</code> by the time the coder locks the mutex
+and checks the <code>while</code> condition, so it simply never enters
+<code>pthread_cond_wait</code> at all. No wakeup is ever "lost" because the state (<code>granted</code>) is
+persistent, not a one-shot pulse.
+</div>
+
+<h4>heap_push(), req_less(), heap_sift_up() — first appearance</h4>
+<p class="pill">src/6_heap.c</p>
+<p>Your request queue is a classic <b>binary min-heap</b> stored in a flat array
+(<code>sim->heap</code>), which is the standard array representation: for a node at index <code>idx</code>,
+its children live at <code>2*idx+1</code> and <code>2*idx+2</code>, and its parent at
+<code>(idx-1)/2</code>. This gives you an <code>O(log n)</code> insert and an <code>O(log n)</code>
+pop-the-most-urgent-request, versus <code>O(n)</code> for a linear scan — and since <code>n</code> is small
+here it's mostly about correctness and clarity rather than raw speed, but it's the textbook right tool for
+"always process the smallest-priority item next", i.e. a priority queue.</p>
+<pre><code><span class="kw">int</span> req_less(<span class="kw">const</span> t_request *a, <span class="kw">const</span> t_request *b)
+{
+    <span class="kw">if</span> (a->priority != b->priority) <span class="kw">return</span> (a->priority &lt; b->priority);
+    <span class="kw">return</span> (a->coder_id &gt; b->coder_id);
+}</code></pre>
+<p>The comparator: lower <code>priority</code> value wins (both FIFO timestamps and EDF deadlines are
+"smaller = more urgent", so this one comparator correctly serves both scheduling policies just by changing
+what number goes into <code>priority</code>). If two requests tie exactly on priority, the higher
+<code>coder_id</code> is treated as "less" — an arbitrary but <em>deterministic</em> tie-break, which matters
+because a non-deterministic tie-break could occasionally produce a different grant order between otherwise
+identical runs, which is exactly the flakiness the correction sheet warns evaluators to watch for.</p>
+<pre><code><span class="kw">int</span> heap_push(t_sim *sim, t_request req)
+{
+    <span class="kw">if</span> (sim->heap_size &gt;= sim->heap_cap) <span class="kw">return</span> (-1);
+    sim->heap[sim->heap_size] = req;
+    heap_sift_up(sim->heap, sim->heap_size);
+    sim->heap_size++;
+    <span class="kw">return</span> (0);
+}</code></pre>
+<p>Appends the new request at the next free slot, then <code>heap_sift_up</code> repeatedly swaps it with its
+parent while it's "less" (more urgent) than the parent, restoring the heap invariant in
+<code>O(log n)</code> swaps. This can never overflow because <code>heap_cap == sim->n</code> and, as noted
+above, at most one request per coder can be in flight at once.</p>
+
+<h4>dispatch() — deciding who actually gets to compile</h4>
+<pre><code><span class="kw">void</span> dispatch(t_sim *sim)
+{
+    t_request req; t_coder *c; <span class="kw">int</span> pending = 0;
+    <span class="kw">while</span> (sim->heap_size &gt; 0)
+    {
+        req = sim->heap[0];
+        heap_remove(sim, 0);
+        c = &amp;sim->coders[req.coder_id - 1];
+        <span class="kw">if</span> (c->left != c->right
+            &amp;&amp; dongle_ready(c->left, sim->dongle_cooldown)
+            &amp;&amp; dongle_ready(c->right, sim->dongle_cooldown))
+            grant_request(c);
+        <span class="kw">else</span>
+            sim->pending[pending++] = req;
+    }
+    <span class="kw">while</span> (pending &gt; 0)
+        heap_push(sim, sim->pending[--pending]);
+}</code></pre>
+<p>This is the piece that decides everything. It <b>fully drains</b> the heap, one request at a time, always
+popping index <code>0</code> — which, in a min-heap, is always the single most urgent pending request. For
+each one it asks: are <em>both</em> of this coder's dongles currently free and past their cooldown? If yes,
+<code>grant_request(c)</code> hands them over right now, atomically, as a pair. If no, the request is parked
+in the <code>pending</code> scratch array instead of being lost. Once every queued request has been examined
+exactly once (in strict priority order), whatever couldn't be granted is pushed back into the heap.</p>
+<p><code>heap_remove(sim, 0)</code> (also in <code>6_heap.c</code>) is what actually pops the root: it moves
+the <em>last</em> element of the heap into the vacated root slot, shrinks <code>heap_size</code>, and then
+runs <em>both</em> <code>heap_sift_up</code> and <code>heap_sift_down</code> on that relocated element,
+because depending on its priority it might need to move either up or down to restore the heap property — a
+single direction isn't guaranteed to be correct after an arbitrary removal.</p>
+<p><b>Why the whole heap is drained every single call instead of just checking the top request</b>: because
+granting one request can never make an earlier, still-pending request grantable (dongles only get scarcer as
+you grant more), so a naive "pop top, if not grantable stop" would systematically starve any request sitting
+behind a currently-blocked one, even if that request's own two dongles happen to be perfectly free. Draining
+the whole heap in strict priority order and re-queuing only the actually-unsatisfiable ones guarantees maximum
+parallelism on every call: every coder whose two dongles are free right now gets served in this pass,
+regardless of position in the queue.</p>
+<pre><code><span class="kw">bool</span> dongle_ready(t_dongle *d, <span class="kw">long long</span> cooldown_ms)
+{
+    <span class="kw">if</span> (d->in_use) <span class="kw">return</span> (<span class="kw">false</span>);
+    <span class="kw">if</span> (d->release_time == 0) <span class="kw">return</span> (<span class="kw">true</span>);
+    <span class="kw">return</span> (get_time_ms() &gt;= d->release_time + cooldown_ms);
+}</code></pre>
+<p>A dongle is ready if it's not currently held, and either it's never been used (<code>release_time == 0</code>,
+the sentinel from Step 3) or enough time has passed since its last release to satisfy
+<code>dongle_cooldown</code>.</p>
+<pre><code><span class="kw">void</span> grant_request(t_coder *c)
+{
+    c->left->in_use = <span class="kw">true</span>;
+    c->right->in_use = <span class="kw">true</span>;
+    pthread_mutex_lock(&amp;c->cond_mutex);
+    c->granted = <span class="kw">true</span>;
+    pthread_cond_signal(&amp;c->cond);
+    pthread_mutex_unlock(&amp;c->cond_mutex);
+}</code></pre>
+<p>Both dongles flip to <code>in_use = true</code> in the same statement pair, still under
+<code>arb_mutex</code> (held by the caller, <code>dispatch()</code>, which is itself always called while
+<code>arb_mutex</code> is locked). This is the crucial detail for deadlock-freedom — see Section 8. Then the
+coder's own <code>granted</code> flag is flipped and its private condition variable is signaled, waking it up
+from <code>coder_wait_grant()</code> if it's already sleeping there, or pre-setting the flag if it hasn't
+gotten there yet (per the lost-wakeup discussion above).</p>
+
+<h4>coder_wait_grant() — the coder actually goes to sleep</h4>
+<p class="pill">src/7_helper.c</p>
+<pre><code><span class="kw">bool</span> coder_wait_grant(t_sim *sim, t_coder *c)
+{
+    pthread_mutex_lock(&amp;c->cond_mutex);
+    <span class="kw">while</span> (!c->granted &amp;&amp; !sim_is_stopped(sim))
+        pthread_cond_wait(&amp;c->cond, &amp;c->cond_mutex);
+    got = c->granted;
+    pthread_mutex_unlock(&amp;c->cond_mutex);
+    <span class="kw">return</span> (got);
+}</code></pre>
+<p>This blocks the coder thread — using zero CPU while waiting, unlike a busy-poll loop — until either it gets
+granted its dongles, or the whole simulation stops (because someone else burned out, or everyone finished).
+The <code>while</code> loop (not an <code>if</code>) around <code>pthread_cond_wait</code> is mandatory
+POSIX practice: condition variables can wake up "spuriously" (with no corresponding signal at all), so you
+must always re-check the actual predicate after waking, not just trust that being woken means the condition
+is true.</p>
+<p><b>Return value that steers the pipeline:</b> if the wait returns because the simulation stopped rather than
+because of a real grant, <code>dongle_request()</code> (5.2) removes this coder's now-orphaned request from
+the shared heap under <code>arb_mutex</code>, using <code>heap_find()</code> (linear scan for this
+<code>coder_id</code>) followed by <code>heap_remove()</code>. This prevents a stale, never-to-be-granted
+request from sitting in the heap after the coder that submitted it has already given up.</p>
+
+<h3>5.3 — run_compile_phase(): actually "compiling"</h3>
+<pre><code><span class="kw">static void</span> run_compile_phase(t_coder *c, t_sim *sim)
+{
+    pthread_mutex_lock(&amp;c->cond_mutex);
+    c->last_compile_start = get_time_ms();
+    pthread_mutex_unlock(&amp;c->cond_mutex);
+    log_event(sim, c->id, <span class="str">"is compiling"</span>);
+    msleep(sim->time_to_compile);
+    put_dongles(c);
+}</code></pre>
+<p>The instant it starts compiling, <code>last_compile_start</code> is stamped with the current time — this
+<em>resets the burnout clock</em>. That's the whole meaning of the rule "must start a new compile within
+<code>time_to_burnout</code> ms of the last one": the deadline is always measured from this exact field,
+written here and only here (besides the initial seed in Step 3), and always under <code>cond_mutex</code> so
+the monitor thread's concurrent reads of it are never torn or stale beyond one lock hand-off.</p>
+<p><code>msleep()</code> (in <code>utils.c</code>) is your busy-work simulator:</p>
+<pre><code><span class="kw">int</span> msleep(<span class="kw">long long</span> ms)
+{
+    deadline = get_time_ms() + ms;
+    <span class="kw">while</span> (1)
+    {
+        now = get_time_ms();
+        <span class="kw">if</span> (now &gt;= deadline) <span class="kw">return</span> (0);
+        remaining = deadline - now;
+        <span class="kw">if</span> (remaining &gt; 1000) remaining = 1000;
+        usleep((useconds_t)(remaining * 1000LL));
+    }
+}</code></pre>
+<p>Rather than a single <code>usleep(ms*1000)</code>, it loops, sleeping in chunks of at most 1 second and
+re-checking the actual elapsed wall-clock time each time. This protects against <code>usleep</code>'s
+documented imprecision on long sleeps and against being woken early by a signal — it guarantees you never
+return <em>before</em> the deadline, only ever at or slightly after it (see Section 11 for exactly how much
+"slightly" is and why that's fine).</p>
+<p>After the compile-duration sleep, <code>put_dongles(c)</code> is a one-line wrapper around
+<code>dongle_release(c->sim, c)</code>:</p>
+<pre><code><span class="kw">void</span> dongle_release(t_sim *sim, t_coder *c)
+{
+    pthread_mutex_lock(&amp;sim->arb_mutex);
+    c->left->in_use = <span class="kw">false</span>;
+    c->left->release_time = get_time_ms();
+    <span class="kw">if</span> (c->right != c->left)
+    {
+        c->right->in_use = <span class="kw">false</span>;
+        c->right->release_time = get_time_ms();
+    }
+    dispatch(sim);
+    pthread_mutex_unlock(&amp;sim->arb_mutex);
+}</code></pre>
+<p>Both dongles are freed and stamped with the current time as their new <code>release_time</code> (which
+starts their cooldown clock), and then — still under the same lock — <code>dispatch()</code> is called
+again immediately. This is exactly how a released dongle gets handed to the next waiting coder without any
+delay: the very act of releasing triggers a fresh arbitration pass right there, in the releasing thread,
+rather than waiting for some other thread to notice.</p>
+
+<h3>5.4 — run_debug_refactor(): the rest of the cycle</h3>
+<pre><code><span class="kw">static bool</span> run_debug_refactor(t_coder *c, t_sim *sim)
+{
+    <span class="kw">if</span> (sim_is_stopped(sim)) <span class="kw">return</span> (<span class="kw">false</span>);
+    log_event(sim, c->id, <span class="str">"is debugging"</span>);   msleep(sim->time_to_debug);
+    <span class="kw">if</span> (sim_is_stopped(sim)) <span class="kw">return</span> (<span class="kw">false</span>);
+    log_event(sim, c->id, <span class="str">"is refactoring"</span>); msleep(sim->time_to_refactor);
+    <span class="kw">return</span> (<span class="kw">true</span>);
+}</code></pre>
+<p>Plain sequential logging + sleeping, with a <code>sim_is_stopped()</code> check before each phase so a
+coder doesn't keep logging fake progress after the simulation has already ended elsewhere (e.g. because
+another coder burned out mid-cycle). Note the dongles are <em>already released</em> by this point (released
+right after the compile phase) — the coder only needs both dongles for the compile itself, freeing them
+immediately afterward is exactly what lets other coders make progress during this coder's debug/refactor time.</p>
+<p>Back in <code>coder_cycle</code>: if this returns <code>true</code>, <code>compile_count</code> is
+incremented under <code>cond_mutex</code> and the whole cycle repeats from the top of
+<code>coder_routine</code>'s <code>while</code> loop — check the stop flag, check the compile quota, request
+dongles again with a <em>fresh</em> <code>ticket</code> (for FIFO) or a <em>later</em> deadline (for EDF,
+since <code>last_compile_start</code> just advanced).</p>
+<p>Eventually one of three things ends this thread: the quota check at the top of <code>coder_cycle</code>
+sees <code>compile_count &gt;= compiles_required</code> and returns <code>false</code>; <code>take_dongles</code>
+returns <code>false</code> because the sim was already stopped by someone else; or
+<code>run_debug_refactor</code> returns <code>false</code> for the same reason. Any of these breaks the outer
+<code>while</code> loop in <code>coder_routine</code>, which returns <code>NULL</code> — the thread is done,
+waiting to be joined.</p>
+
+<hr>
+
+<h2 id="s6"><span class="step-tag">STEP 6</span>monitor_routine() — the referee thread</h2>
+<p class="pill">src/8_monitor.c &amp; src/utils2.c</p>
+
+<p>This thread is created right after the coders (Step 4) and runs concurrently with all of them for the
+entire simulation. Its job is everything that no single coder can know on its own: "has everyone finished?",
+"has anyone silently blown their deadline?", and "did a cooldown expire while nobody was actively watching?"</p>
+
+<pre><code><span class="kw">void</span> *monitor_routine(<span class="kw">void</span> *arg)
+{
+    t_sim *sim = (t_sim *)arg;
+    <span class="kw">while</span> (!sim_is_stopped(sim))
+    {
+        wake_us = monitor_tick(sim);
+        <span class="kw">if</span> (wake_us &lt; 0) <span class="kw">break</span>;
+        usleep((useconds_t)wake_us);
+    }
+    <span class="kw">return</span> (NULL);
+}</code></pre>
+
+<p>Every iteration: run one full <code>monitor_tick()</code>, then sleep for exactly as long as
+<code>monitor_tick</code> itself calculated is safe to sleep before something needs to be re-checked. A
+negative return means "the simulation just ended, stop looping".</p>
+
+<h4>monitor_tick()</h4>
+<pre><code><span class="kw">long long</span> monitor_tick(t_sim *sim)
+{
+    <span class="kw">if</span> (sim->compiles_required &gt; 0 &amp;&amp; all_compiled(sim))
+    { handle_stop(sim, 0); <span class="kw">return</span> (-1); }
+    pthread_mutex_lock(&amp;sim->arb_mutex);
+    dispatch(sim);
+    pthread_mutex_unlock(&amp;sim->arb_mutex);
+    burned = scan_coders(sim, &amp;wake_us);
+    <span class="kw">if</span> (burned != 0) { handle_stop(sim, burned); <span class="kw">return</span> (-1); }
+    cooldown_us = next_cooldown_us(sim);
+    <span class="kw">if</span> (cooldown_us &lt; wake_us) wake_us = cooldown_us;
+    <span class="kw">return</span> (wake_us);
+}</code></pre>
+
+<h4>6.1 — all_compiled()</h4>
+<pre><code><span class="kw">bool</span> all_compiled(t_sim *sim)
+{
+    <span class="kw">while</span> (i &lt; sim->n)
+    {
+        pthread_mutex_lock(&amp;sim->coders[i].cond_mutex);
+        count = sim->coders[i].compile_count;
+        pthread_mutex_unlock(&amp;sim->coders[i].cond_mutex);
+        <span class="kw">if</span> (count &lt; sim->compiles_required) <span class="kw">return</span> (<span class="kw">false</span>);
+        i++;
+    }
+    <span class="kw">return</span> (<span class="kw">true</span>);
+}</code></pre>
+<p>Locks each coder's own <code>cond_mutex</code> individually just to read its <code>compile_count</code> —
+the same lock the coder thread uses when it increments that field (Step 5, end of <code>coder_cycle</code>).
+This is the successful-completion path: as soon as every coder has hit the required count,
+<code>handle_stop(sim, 0)</code> is called (a "0" burned-coder id means "clean stop, nobody burned out"), and
+<code>monitor_tick</code> returns <code>-1</code>, ending the monitor loop.</p>
+
+<h4>6.2 — the periodic re-dispatch</h4>
+<p>If not everyone's done, the monitor grabs <code>arb_mutex</code> and calls <code>dispatch()</code> itself
+— the exact same function coders call when they submit or release a request (5.2 / 5.3). Why does the
+monitor also need to call it? Because a dongle's cooldown expiring is a <em>silent, time-based</em> event:
+nothing "happens" at that exact millisecond from any thread's point of view unless something actively checks
+the clock. If coder A released a dongle and went off to debug/refactor, and coder B is the only one waiting
+on that dongle, nobody will re-run <code>dispatch()</code> when the cooldown finally elapses unless the
+monitor does it on a timer. This periodic tick is exactly that safety net.</p>
+
+<h4>6.3 — scan_coders() and coder_deadline_remain(): burnout detection</h4>
+<pre><code><span class="kw">long long</span> coder_deadline_remain(t_sim *sim, <span class="kw">int</span> i, <span class="kw">long long</span> now)
+{
+    pthread_mutex_lock(&amp;sim->coders[i].cond_mutex);
+    start = sim->coders[i].last_compile_start;
+    count = sim->coders[i].compile_count;
+    pthread_mutex_unlock(&amp;sim->coders[i].cond_mutex);
+    <span class="kw">if</span> (count &gt;= sim->compiles_required) <span class="kw">return</span> (1000000000LL);
+    <span class="kw">return</span> (start + sim->time_to_burnout - now);
+}</code></pre>
+<p>A coder that's already reached its compile quota is given an effectively infinite deadline
+(<code>1e9</code> ms) so it can never trigger a false burnout after it's already "retired" from the race.
+Otherwise, the remaining time is exactly <code>last_compile_start + time_to_burnout - now</code>: if that's
+<code>&lt;= 0</code>, the coder has failed to start a new compile in time.</p>
+<pre><code><span class="kw">int</span> scan_coders(t_sim *sim, <span class="kw">long long</span> *wake_us)
+{
+    now = get_time_ms(); *wake_us = 10 * 1000LL; burned = 0;
+    <span class="kw">while</span> (i &lt; sim->n)
+    {
+        remain = coder_deadline_remain(sim, i, now);
+        <span class="kw">if</span> (remain &lt;= 0 &amp;&amp; burned == 0) burned = i + 1;
+        <span class="kw">if</span> (remain * 1000LL &lt; *wake_us) *wake_us = remain * 1000LL;
+        i++;
+    }
+    <span class="kw">if</span> (*wake_us &lt; 200) *wake_us = 200;
+    <span class="kw">return</span> (burned);
+}</code></pre>
+<p>Two jobs at once, in one pass over every coder: (1) find the <em>first</em> coder (lowest index) whose
+deadline has already passed, remembering it as <code>burned</code>; (2) compute, in microseconds, how long
+until the <em>soonest</em> upcoming deadline among all coders — this becomes the monitor's next
+<code>usleep</code> duration, clamped to a minimum of <code>200</code> µs so it never busy-spins even if a
+deadline is already in the past by the time this runs. This adaptive sleep is the key to precise-but-cheap
+burnout detection: the monitor doesn't poll at a fixed fast interval burning CPU the whole time, it computes
+exactly how long it can safely sleep before it needs to check again, and sleeps <em>that</em> long, no more.</p>
+
+<h4>6.4 — next_cooldown_us(): waking up exactly when a dongle becomes usable</h4>
+<pre><code><span class="kw">long long</span> next_cooldown_us(t_sim *sim)
+{
+    now = get_time_ms(); nearest = 10 * 1000LL;
+    pthread_mutex_lock(&amp;sim->arb_mutex);
+    <span class="kw">while</span> (i &lt; sim->n)
+    {
+        <span class="kw">if</span> (!sim->dongles[i].in_use &amp;&amp; sim->dongles[i].release_time != 0)
+        {
+            remain = sim->dongles[i].release_time + sim->dongle_cooldown - now;
+            <span class="kw">if</span> (remain &gt; 0 &amp;&amp; remain * 1000LL &lt; nearest) nearest = remain * 1000LL;
+        }
+        i++;
+    }
+    pthread_mutex_unlock(&amp;sim->arb_mutex);
+    <span class="kw">return</span> (nearest);
+}</code></pre>
+<p>Scans every idle-but-still-cooling dongle and finds the soonest moment any of them exits cooldown.
+<code>monitor_tick</code> then takes <code>min(deadline_wake_us, cooldown_wake_us)</code> — the monitor
+always sleeps only as long as the <em>more urgent</em> of "next possible burnout" or "next possible dongle
+becoming available", guaranteeing it wakes up in time to react to either kind of event, and calls
+<code>dispatch()</code> again right after waking.</p>
+
+<h4>6.5 — handle_stop() and wake_all_coders(): shutting everything down cleanly</h4>
+<pre><code><span class="kw">void</span> handle_stop(t_sim *sim, <span class="kw">int</span> burned)
+{
+    sim_stop(sim);
+    <span class="kw">if</span> (burned != 0) log_burnout(sim, burned);
+    wake_all_coders(sim);
+}</code></pre>
+<p><code>sim_stop()</code> flips the global flag (Step 4) <em>before</em> anything else. Note
+<code>log_burnout()</code> computes its timestamp <em>before</em> taking <code>log_mutex</code> (see
+<code>utils.c</code>) — the elapsed time is captured as close as possible to the actual detection moment,
+not delayed by however long it takes to acquire the print lock.</p>
+<pre><code><span class="kw">void</span> wake_all_coders(t_sim *sim)
+{
+    signal_coders(sim);                          <span class="cm">// pass 1</span>
+    pthread_mutex_lock(&amp;sim->arb_mutex);
+    pthread_mutex_unlock(&amp;sim->arb_mutex);
+    signal_coders(sim);                          <span class="cm">// pass 2</span>
+}</code></pre>
+<p><code>signal_coders()</code> loops every coder, locks its <code>cond_mutex</code>, calls
+<code>pthread_cond_broadcast</code> (wake every thread waiting on this condvar, not just one — safe here
+because at most one thread ever waits on a given coder's condvar anyway), and unlocks. The <b>double
+broadcast, with an arb_mutex lock/unlock sandwiched in between</b>, is deliberate: a coder that is, at this
+exact instant, inside <code>dongle_request()</code> holding <code>arb_mutex</code> but hasn't yet reached
+<code>coder_wait_grant()</code> could miss the first broadcast entirely (it isn't waiting on the condvar yet).
+Acquiring and releasing <code>arb_mutex</code> here forces the monitor to wait until any coder mid-way through
+that critical section has finished it and moved on (to either being granted, or about to wait), and the
+second broadcast then reliably catches it once it does start waiting. Combined with the persistent-flag
+design from 5.2's lost-wakeup discussion, this makes the shutdown signal essentially un-missable.</p>
+
+<hr>
+
+<h2 id="s7"><span class="step-tag">STEP 7</span>Joining, and sim_cleanup()</h2>
+<p class="pill">src/9_cleaner.c</p>
+
+<p>Back in <code>sim_run()</code> (Step 4), once every coder thread has returned <code>NULL</code> (its
+<code>while</code> loop broke, for any of the three reasons in 5.4) and the monitor has also returned
+(because <code>monitor_tick</code> returned <code>-1</code>), all the <code>pthread_join</code> calls unblock
+and <code>sim_run()</code> returns to <code>main()</code>. <code>main()</code> then unconditionally calls
+<code>sim_cleanup(sim)</code>:</p>
+<pre><code><span class="kw">void</span> sim_cleanup(t_sim *sim)
+{
+    <span class="kw">if</span> (sim->threads) { free(sim->threads); sim->threads = NULL; }
+    <span class="kw">if</span> (sim->coders) free_coders(sim);
+    <span class="kw">if</span> (sim->dongles) free_dongle_arrays(sim);
+    pthread_mutex_destroy(&amp;sim->log_mutex);
+    pthread_mutex_destroy(&amp;sim->stop_mutex);
+    pthread_mutex_destroy(&amp;sim->arb_mutex);
+}</code></pre>
+<p><code>free_coders()</code> loops every coder destroying its <code>cond</code> and
+<code>cond_mutex</code> (mirror image of <code>init_coder</code> in Step 3) before freeing the array itself.
+<code>free_dongle_arrays()</code> frees the three parallel arrays (<code>dongles</code>, <code>heap</code>,
+<code>pending</code>) that were all allocated together in <code>init_dongles</code>. Every pointer is set
+back to <code>NULL</code> after freeing — cheap insurance against any accidental double-free, and consistent
+with the "everything starts zeroed" guarantee from <code>main()</code>'s initial <code>memset</code>. This
+symmetric init/cleanup pairing (every <code>_init</code> has a matching destroy, every <code>malloc</code>
+a matching <code>free</code>, called from a single unconditional cleanup path reachable from every failure
+branch) is exactly what makes this leak-free under <code>valgrind</code>, including on the early-exit paths
+in <code>sim_init()</code> itself.</p>
+<p>Finally, control returns to <code>main()</code>, which returns <code>1</code> if <code>sim_run()</code>
+reported failure or <code>0</code> otherwise. Program exits.</p>
+
+<hr>
+
+<h2 id="s8">8. Deep dive — concurrency safety, Coffman conditions, races, starvation</h2>
+
+<h3>8.1 — Deadlock: how the four Coffman conditions are actually broken here</h3>
+<table>
+<tr><th>Condition</th><th>Present?</th><th>Why / how it's handled</th></tr>
+<tr><td>Mutual exclusion</td><td>Yes (unavoidable)</td>
+<td>A dongle really can only serve one coder at a time — that's the problem definition, not a bug.</td></tr>
+<tr><td>Hold-and-wait</td><td><b>No — this is the actual fix</b></td>
+<td>A coder <em>never</em> holds one dongle while waiting for the second. Look again at
+<code>grant_request()</code>: <code>c->left->in_use = true; c->right->in_use = true;</code> both flip together,
+inside <code>dispatch()</code>, inside a single critical section under <code>arb_mutex</code>. A request is
+only ever granted when <em>both</em> dongles are simultaneously free (<code>dongle_ready(left) &amp;&amp;
+dongle_ready(right)</code>) — there is no code path anywhere that marks one dongle in-use and then separately
+tries to acquire the other. The coder thread doesn't even see its dongles as "acquired" one at a time; from
+its perspective it calls <code>dongle_request()</code> once and either gets both or gets neither.</td></tr>
+<tr><td>No preemption</td><td>Yes (by design, and fine)</td>
+<td>Dongles are only ever released voluntarily by <code>dongle_release()</code> after a compile finishes —
+nobody forcibly strips a dongle from a coder. This condition is allowed to hold because condition 2 (the
+dangerous one) is already eliminated.</td></tr>
+<tr><td>Circular wait</td><td><b>No — impossible given the above</b></td>
+<td>A circular wait (A holds X, wants Y; B holds Y, wants X) fundamentally requires <em>partial</em> holding —
+some thread holding one resource while blocked wanting another. Since no coder ever holds a dongle while
+waiting for a second one, the wait-for graph among coders never contains an edge from a coder that's
+currently holding anything. No holder ever waits, so no cycle of holders-waiting-for-each-other can form.</td></tr>
+</table>
+
+<div class="defend"><b>How to phrase this to an evaluator</b>
+"I don't prevent deadlock via lock ordering or a resource hierarchy — I prevent it by making resource
+acquisition <em>atomic and all-or-nothing</em>. All admission decisions for every coder happen inside one
+critical section, protected by one mutex (<code>arb_mutex</code>), and a coder is only ever moved from
+'holds nothing' to 'holds both dongles' in a single step. There is no intermediate state where a thread holds
+exactly one of the two dongles it needs, so Coffman condition 2 (hold-and-wait) never holds, and therefore
+condition 4 (circular wait) can't either — which is sufficient on its own to rule out deadlock, since all four
+conditions must hold simultaneously for a deadlock to occur."
+</div>
+
+<h3>8.2 — Race conditions: every shared field and how it's protected</h3>
+<table>
+<tr><th>Shared state</th><th>Guarded by</th><th>Written by</th><th>Read by</th></tr>
+<tr><td><code>sim->stopped</code></td><td><code>stop_mutex</code></td><td>any thread, via <code>sim_stop()</code></td><td>every thread, via <code>sim_is_stopped()</code></td></tr>
+<tr><td>dongle <code>in_use</code> / <code>release_time</code>, the request heap, <code>pending</code></td>
+<td><code>arb_mutex</code></td><td>only inside <code>dispatch()</code> / <code>dongle_release()</code>, always locked</td>
+<td>only inside <code>dispatch()</code> / <code>next_cooldown_us()</code>, always locked</td></tr>
+<tr><td>a coder's <code>compile_count</code>, <code>last_compile_start</code></td><td>that coder's own <code>cond_mutex</code></td>
+<td>only that coder's own thread</td><td>the monitor thread, via <code>coder_deadline_remain</code> / <code>all_compiled</code></td></tr>
+<tr><td>a coder's <code>granted</code> flag</td><td>that coder's own <code>cond_mutex</code></td>
+<td><code>grant_request()</code> (called from whichever thread runs <code>dispatch()</code>)</td>
+<td>that coder's own thread, in <code>coder_wait_grant()</code></td></tr>
+<tr><td>stdout</td><td><code>log_mutex</code></td><td>all threads via <code>log_event</code>/<code>log_burnout</code></td><td>—</td></tr>
+</table>
+<p>There is no field in this program that is written by one thread and read by another without a mutex
+somewhere in between on both the write and the read side. That's the full, complete answer to "how do you
+prevent race conditions" — not "we're careful" but "every cross-thread field has exactly one lock that both
+sides always take."</p>
+
+<h3>8.3 — Starvation prevention</h3>
+<ul>
+<li><b>FIFO:</b> priority = request timestamp. Because the min-heap always serves the smallest timestamp
+first and <code>dispatch()</code> re-evaluates the <em>entire</em> queue on every call rather than only
+looking at the front, a request can only be repeatedly skipped if its own two specific dongles keep being
+unavailable — it is never skipped in favor of a <em>later</em> request whose dongles happen to be free while
+its own aren't (that's not starvation, that's the actual resource constraint). Among requests contending for
+the same dongles, strict arrival order is preserved.</li>
+<li><b>EDF:</b> priority = absolute burnout deadline, which strictly increases every time that specific coder
+completes a compile (because it's derived from the ever-advancing <code>last_compile_start</code>). A coder
+that keeps losing arbitration keeps the <em>same</em>, increasingly urgent deadline, so it becomes more and
+more likely to win as its situation gets more dangerous — the scheduler is explicitly biased to protect the
+coder closest to failing.</li>
+</ul>
+
+<hr>
+
+<h2 id="s9">9. README vs reality — what to actually say in defense</h2>
+<div class="fix"><b>Read this before your defense</b>
+Your <code>README.md</code>'s "Blocking cases handled" section makes a few claims that are <b>not</b> what
+<code>src/</code> actually does. If an evaluator reads both the README and the code side by side (the
+correction sheet explicitly tells them to "read the code to confirm"), you want to describe the real
+mechanism, not the README's wording — the real mechanism is actually stronger and easier to defend.
+</div>
+<table>
+<tr><th>README claims</th><th>What the code actually does</th></tr>
+<tr><td>"Circular wait broken by always acquiring dongles in ascending id order."</td>
+<td>There is no per-dongle acquisition order at all — <code>grant_request()</code> takes both dongles
+simultaneously in one atomic step, so hold-and-wait (condition 2) never occurs, which rules out circular wait
+directly. See Section 8.1.</td></tr>
+<tr><td>"Each dongle has a mutex" / "pthread_mutex_t dongle.mutex".</td>
+<td>There is no per-dongle mutex in <code>t_dongle</code> — every dongle's state is protected by the single
+shared <code>arb_mutex</code>. Simpler, and correct, but say <code>arb_mutex</code>, not "dongle.mutex", if
+asked to point at the code.</td></tr>
+<tr><td>"A waiting coder re-checks with a 0.5&nbsp;ms <code>pthread_cond_timedwait</code>."</td>
+<td><code>coder_wait_grant()</code> uses a plain, untimed <code>pthread_cond_wait</code>. The coder never
+polls at all — it's the <em>monitor thread</em> that periodically calls <code>dispatch()</code> (driven by
+<code>next_cooldown_us()</code>'s calculation) and it is the monitor, via <code>grant_request()</code>, that
+wakes the coder exactly when its dongles actually become available. There is no cooldown-driven timed-wait
+anywhere in <code>dongle.c</code> or <code>helper.c</code>.</td></tr>
+<tr><td>"A staggered start (even-numbered coders sleep <code>time_to_compile/2</code> ms) prevents a
+thundering herd at startup."</td>
+<td><code>coder_routine()</code> has no start-up delay of any kind — every coder thread calls
+<code>take_dongles()</code> immediately. The thundering herd at t=0 is instead absorbed safely by
+<code>arb_mutex</code>: all <code>n</code> coders may race to submit their first request simultaneously, but
+<code>heap_push</code> + <code>dispatch</code> only ever run one at a time (mutex-serialized), so the burst is
+resolved correctly and deterministically by priority, just not pre-emptively spread out in time.</td></tr>
+</table>
+<p>None of these discrepancies are bugs — the actual implementation satisfies every requirement on the
+correction sheet using a simpler, centralized, atomic-arbitration design. Just make sure your spoken
+explanation matches <code>arb_mutex</code> + <code>dispatch()</code>, not the README's older/aspirational
+wording.</p>
+
+<hr>
+
+<h2 id="s10">10. Live recode — turning "fifo" into "lifo"</h2>
+<p>The correction sheet's recode exercise asks you to make the <em>most recently arrived</em> waiting
+request win, instead of the oldest. Two things must change, and only two — and critically, the change must
+live in the actual scheduling comparison, not in how you print the logs (the guideline explicitly says to
+verify this by reading the code).</p>
+
+<h4>Step A — teach the parser a third scheduler word</h4>
+<pre><code><span class="cm">// codexion.h</span>
+<span class="kw">typedef enum</span> e_scheduler { POLICY_FIFO, POLICY_EDF, POLICY_LIFO } t_scheduler;
+
+<span class="cm">// 1_parser.c, parse_sched()</span>
+<span class="kw">if</span> (strcmp(s, <span class="str">"fifo"</span>) == 0) sim->scheduler = POLICY_FIFO;
+<span class="kw">else if</span> (strcmp(s, <span class="str">"edf"</span>) == 0) sim->scheduler = POLICY_EDF;
+<span class="kw">else if</span> (strcmp(s, <span class="str">"lifo"</span>) == 0) sim->scheduler = POLICY_LIFO;
+<span class="kw">else</span> { fprintf(stderr, <span class="str">"Error: scheduler must be 'fifo', 'edf' or 'lifo'.\n"</span>); <span class="kw">return</span> (-1); }</code></pre>
+
+<h4>Step B — flip the actual priority number in dongle_request()</h4>
+<p>Recall <code>req_less()</code> always treats the <b>smaller</b> <code>priority</code> value as more
+urgent — that's what makes it a min-heap. For FIFO you want the <em>oldest</em> (smallest) timestamp to win,
+which is exactly what happens when <code>priority = ticket</code>. For LIFO you want the <em>newest</em>
+(largest) timestamp to win — so you need the newest ticket to map to the <em>smallest</em> priority number.
+Negate it:</p>
+<pre><code><span class="cm">// 5_dongle.c, dongle_request()</span>
+req.coder_id = c->id;
+req.priority = c->ticket;
+<span class="kw">if</span> (sim->scheduler == POLICY_EDF)
+    req.priority = c->last_compile_start + sim->time_to_burnout;
+<span class="kw">else if</span> (sim->scheduler == POLICY_LIFO)
+    req.priority = -c->ticket;   <span class="cm">// larger (more recent) ticket ⇒ smaller priority ⇒ served first</span></code></pre>
+<p>That's it. No change to <code>req_less</code>, <code>heap_sift_up/down</code>, <code>dispatch()</code>, or
+any logging function — the entire scheduling policy is a one-line change of what number goes into
+<code>priority</code>. This is exactly why the correction sheet can tell whether you faked it at the log
+level: if you had only reversed the order lines are printed, the underlying <em>grant</em> order (which
+dongles actually got flipped to <code>in_use</code> and when) would still match old FIFO order — but with
+this change, the real timestamps at which <code>"has taken a dongle"</code> lines appear for each coder will
+genuinely reverse.</p>
+
+<h4>Step C — verifying the recode is real, not cosmetic</h4>
+<p>Run the exact contention-heavy case from the correction sheet before and after the change:</p>
+<pre><code>./codexion 5 3000 200 200 200 10 800 fifo   <span class="cm"># baseline: arrival order</span>
+./codexion 5 3000 200 200 200 10 800 lifo   <span class="cm"># after the recode</span></code></pre>
+<p>Because <code>dongle_cooldown = 800</code> is large relative to the phase durations, several coders will
+genuinely queue up waiting for a dongle at the same time. Grep the output for
+<code>"has taken a dongle"</code> lines and look at which <code>coder_id</code> gets served first among a
+group that queued up together: under <code>fifo</code> it should be whoever asked earliest; under
+<code>lifo</code> it should be whoever asked <em>last</em> among that same waiting group — a genuine reversal
+of the observed grant order, not just of the text in the log. You can point directly at
+<code>req.priority = -c->ticket;</code> in the source as the one line responsible, which is what "confirm the
+change is made in the scheduler/queue logic itself" is asking you to be able to do.</p>
+
+<hr>
+
+<h2 id="s11">11. Defense script — why the burnout timestamp isn't exactly on the deadline</h2>
+
+<p>Two separate things are worth being able to explain clearly here, because the correction sheet raises both:
+(a) why certain reference cases are <em>designed</em> to burn out at all, and (b) why the printed timestamp
+lands a few milliseconds after the theoretical deadline rather than on it, exactly.</p>
+
+<h3>11.1 — Why <code>./codexion 1 800 200 200 200 10 0 fifo</code> and <code>./codexion 5 500 200 200 200 10 0 fifo</code> must burn out — this is math, not timing luck</h3>
+<p>These aren't cases where "something might go wrong" — they're constructed to be <b>infeasible by
+construction</b>, independent of any OS scheduling behavior:</p>
+<ul>
+<li><b>The single-coder case:</b> with <code>n == 1</code>, <code>init_coder</code> sets
+<code>c->left = &amp;dongles[0]</code> and <code>c->right = &amp;dongles[(0+1)%1] = &amp;dongles[0]</code> — the
+<em>same</em> dongle object. A compile needs two distinct dongles held simultaneously; there is only one
+dongle in existence. No amount of correct scheduling can conjure a second physical resource. Burnout at
+~800&nbsp;ms is a direct, deterministic consequence of the resource math, not of scheduling variance.</li>
+<li><b>The <code>5 500 ...</code> case:</b> one full cycle costs at minimum
+<code>time_to_compile + time_to_debug + time_to_refactor = 200+200+200 = 600</code> ms of guaranteed work
+before a coder can even attempt its next compile — and that's the <em>best possible</em> case, assuming zero
+wait time for dongles. But <code>time_to_burnout = 500</code> ms, which is strictly less than 600. Even a
+coder that gets its dongles instantly, every single time, with zero contention, cannot mathematically start
+its next compile before its own deadline expires. This is guaranteed to happen to <em>every</em> coder, so
+the first one the monitor's scan encounters (lowest coder id, per <code>scan_coders</code>'s
+<code>i + 1</code> tie-break, which is not itself scheduling-dependent) is reported. It happens "around
+timestamp 500" — not because of OS jitter, but because 500 <em>is</em> the deadline, seeded at t=0 in
+<code>init_coder</code>.</li>
+</ul>
+
+<h3>11.2 — Why the printed line still lands a few ms <em>after</em> 500, not at exactly 500</h3>
+<p>This is the actual OS-scheduling story, and it's a completely different, much smaller effect layered on top
+of the deterministic burnout above. Three real sources of delay, all present in this codebase and all bounded:</p>
+<ol>
+<li><b>Monitor polling granularity.</b> The monitor doesn't watch the clock continuously — it sleeps for
+<code>wake_us</code> microseconds (from <code>scan_coders</code>/<code>next_cooldown_us</code>, floor-clamped
+to <code>200</code> µs) and only re-checks deadlines when it wakes up. So detection happens at the <em>next
+scheduled wake-up</em> after the deadline passes, not at the exact microsecond it passes. Since
+<code>scan_coders</code> recomputes the time-to-next-deadline on every tick and always sleeps for at most that
+long (clamped to at least 200 µs so it doesn't busy-spin), the monitor is guaranteed to wake up within roughly
+one clamped interval of the true deadline — on the order of a fraction of a millisecond to a couple of
+milliseconds in practice, comfortably inside the sheet's stated 10&nbsp;ms tolerance.</li>
+<li><b>Kernel scheduling latency on <code>usleep</code>.</b> <code>usleep()</code> is a request for
+"<em>at least</em> this long", never a guarantee of exactly that long — the OS scheduler only guarantees to
+wake the thread at or after the requested time, and the actual wake-up depends on what else is running, timer
+interrupt granularity, and how loaded the machine is. This is precisely the "slow hardware" / "OS scheduling"
+variance the correction sheet tells evaluators to tolerate. Your own <code>msleep()</code> already compensates
+for this on the coder side by re-checking <code>get_time_ms()</code> in a loop instead of trusting a single
+<code>usleep</code> call to be exact — the monitor's own <code>usleep(wake_us)</code> doesn't need the same
+loop because slightly overshooting its sleep only delays <em>detection</em> by a similarly small amount, it
+never causes a false-negative (a burnout that should've fired but didn't) or a false-positive.</li>
+<li><b><code>log_mutex</code> contention.</b> Between the monitor detecting the burnout and the line actually
+reaching stdout, <code>log_burnout()</code> must acquire <code>log_mutex</code>. If some coder thread happens
+to be mid-<code>log_event()</code> at that exact instant, the monitor briefly blocks. This is why
+<code>log_burnout()</code> deliberately captures its timestamp with <code>sim_elapsed(sim)</code>
+<em>before</em> locking the mutex — the printed number reflects the real detection time, and only the
+<em>printing</em> (not the timestamp value) is delayed by lock contention, keeping the reported number
+accurate even if the actual <code>printf</code> executes a moment later.</li>
+</ol>
+
+<div class="defend"><b>The one-paragraph answer to give live in a defense</b>
+"The burnout itself is deterministic — it's forced by the arithmetic of the arguments, not by luck. What can
+shift by a few milliseconds is only <em>when my monitor thread notices and prints it</em>, because
+<code>usleep</code> only guarantees a minimum sleep duration, not an exact one, and the OS scheduler doesn't
+promise to run my thread the instant its sleep expires. I bound that slippage in two ways: <code>scan_coders</code>
+recomputes and re-sleeps for the exact remaining time to the nearest deadline on every tick instead of polling
+at a fixed coarse interval, and I stamp the log timestamp before taking the print lock so lock contention
+delays the <em>print</em>, not the <em>reported time</em>. That keeps the observed drift well inside the
+sheet's own 10&nbsp;ms tolerance."
+</div>
+
+</div>
+</body>
+</html>
