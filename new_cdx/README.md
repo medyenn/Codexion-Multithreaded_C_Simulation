@@ -167,8 +167,7 @@ Coder threads check `sim_is_stopped()` at every state-machine boundary
 - https://www.youtube.com/watch?v=uss88H73P2A
 - https://www.youtube.com/playlist?list=PLBlnK6fEyqRh5YXKAPCZPVZPkdhQa9Skz
 - Maurice J. Bach — *The Design of the UNIX Operating System*
-- GNU libc manual — `pthread_cond_timedwait`:
-  <https://www.gnu.org/software/libc/manual/html_node/Waiting-with-Explicit-Clocks.html>
+- https://dev.to/turalsuleymani/resolving-race-conditions-and-critical-sections-in-c-1f24
 - Dijkstra, E. W. (1965) — *Solution of a problem in concurrent programming control*
   (the original dining philosophers paper)
 - https://hoangvankhoa.medium.com/introduction-to-multithreading-in-c-c-adf7ffbe045d
@@ -176,7 +175,6 @@ Coder threads check `sim_is_stopped()` at every state-machine boundary
   <https://en.wikipedia.org/wiki/Deadlock#Coffman_conditions>
 - Earliest Deadline First scheduling (Wikipedia):
   <https://en.wikipedia.org/wiki/Earliest_deadline_first_scheduling>
-- https://dev.to/turalsuleymani/resolving-race-conditions-and-critical-sections-in-c-1f24
 
 ### AI usage
 
