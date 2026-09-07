@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   codexion.h                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mennih < mennih@student.1337.ma>           +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/06 22:10:37 by mennih            #+#    #+#             */
-/*   Updated: 2026/09/07 02:02:03 by mennih           ###   ########.fr       */
+/*   Updated: 2026/09/07 14:01:26 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,6 @@ typedef enum e_scheduler
 typedef struct s_sim		t_sim;
 typedef struct s_dongle		t_dongle;
 typedef struct s_coder		t_coder;
-
 typedef struct s_request
 {
 	long long	priority;
@@ -115,6 +114,14 @@ long long	next_cooldown_us(t_sim *sim);
 void		*coder_routine(void *arg);
 void		put_dongles(t_coder *c);
 void		*monitor_routine(void *arg);
+void		wake_all_coders(t_sim *sim);
+bool		all_compiled(t_sim *sim);
+int			scan_coders(t_sim *sim, long long *wake_us);
+
+void		grant_request(t_coder *c);
+void		free_dongle_arrays(t_sim *sim);
+void		handle_stop(t_sim *sim, int burned);
+long long	monitor_tick(t_sim *sim);
 
 int			parse_args(int argc, char **argv, t_sim *sim);
 int			sim_init(t_sim *sim);

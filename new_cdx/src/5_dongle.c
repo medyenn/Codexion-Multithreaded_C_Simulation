@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   5_dongle.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mennih < mennih@student.1337.ma>           +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/02 14:25:16 by mennih            #+#    #+#             */
-/*   Updated: 2026/09/07 02:03:07 by mennih           ###   ########.fr       */
+/*   Updated: 2026/09/07 14:01:48 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,14 +46,7 @@ void	dispatch(t_sim *sim)
 		if (c->left != c->right
 			&& dongle_ready(c->left, sim->dongle_cooldown)
 			&& dongle_ready(c->right, sim->dongle_cooldown))
-		{
-			c->left->in_use = true;
-			c->right->in_use = true;
-			pthread_mutex_lock(&c->cond_mutex);
-			c->granted = true;
-			pthread_cond_signal(&c->cond);
-			pthread_mutex_unlock(&c->cond_mutex);
-		}
+			grant_request(c);
 		else
 			sim->pending[pending++] = req;
 	}

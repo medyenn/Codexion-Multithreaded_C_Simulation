@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   2_initializer.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mennih < mennih@student.1337.ma>           +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/02 14:25:48 by mennih            #+#    #+#             */
-/*   Updated: 2026/09/07 02:14:13 by mennih           ###   ########.fr       */
+/*   Updated: 2026/09/07 14:00:13 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,18 +35,11 @@ static int	init_dongles(t_sim *sim)
 	int	i;
 
 	sim->dongles = (t_dongle *)malloc((size_t)sim->n * sizeof(t_dongle));
-	if (!sim->dongles)
-		return (-1);
 	sim->heap = (t_request *)malloc((size_t)sim->n * sizeof(t_request));
 	sim->pending = (t_request *)malloc((size_t)sim->n * sizeof(t_request));
-	if (!sim->heap || !sim->pending)
+	if (!sim->dongles || !sim->heap || !sim->pending)
 	{
-		free(sim->dongles);
-		free(sim->heap);
-		free(sim->pending);
-		sim->dongles = NULL;
-		sim->heap = NULL;
-		sim->pending = NULL;
+		free_dongle_arrays(sim);
 		return (-1);
 	}
 	sim->heap_size = 0;

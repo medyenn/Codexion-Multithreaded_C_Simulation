@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   8_monitor.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mennih < mennih@student.1337.ma>           +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/02 14:25:59 by mennih            #+#    #+#             */
-/*   Updated: 2026/09/07 02:04:58 by mennih           ###   ########.fr       */
+/*   Updated: 2026/09/07 14:02:03 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-static bool	all_compiled(t_sim *sim)
+bool	all_compiled(t_sim *sim)
 {
 	int		i;
 	int		count;
@@ -30,7 +30,7 @@ static bool	all_compiled(t_sim *sim)
 	return (true);
 }
 
-static int	scan_coders(t_sim *sim, long long *wake_us)
+int	scan_coders(t_sim *sim, long long *wake_us)
 {
 	long long	now;
 	long long	start;
@@ -73,7 +73,7 @@ static void	signal_coders(t_sim *sim)
 	}
 }
 
-static void	wake_all_coders(t_sim *sim)
+void	wake_all_coders(t_sim *sim)
 {
 	signal_coders(sim);
 	pthread_mutex_lock(&sim->arb_mutex);
@@ -84,33 +84,14 @@ static void	wake_all_coders(t_sim *sim)
 void	*monitor_routine(void *arg)
 {
 	t_sim		*sim;
-	int			burned;
 	long long	wake_us;
-	long long	cooldown_us;
 
 	sim = (t_sim *)arg;
 	while (!sim_is_stopped(sim))
 	{
-		if (sim->compiles_required > 0 && all_compiled(sim))
-		{
-			sim_stop(sim);
-			wake_all_coders(sim);
+		wake_us = monitor_tick(sim);
+		if (wake_us < 0)
 			break ;
-		}
-		pthread_mutex_lock(&sim->arb_mutex);
-		dispatch(sim);
-		pthread_mutex_unlock(&sim->arb_mutex);
-		burned = scan_coders(sim, &wake_us);
-		if (burned != 0)
-		{
-			sim_stop(sim);
-			log_burnout(sim, burned);
-			wake_all_coders(sim);
-			break ;
-		}
-		cooldown_us = next_cooldown_us(sim);
-		if (cooldown_us < wake_us)
-			wake_us = cooldown_us;
 		usleep((useconds_t)wake_us);
 	}
 	return (NULL);
