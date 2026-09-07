@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by mohael-g.*
+*This project has been created as part of the 42 curriculum by mennih.*
 
 # Codexion — Master the race for resources before the deadline masters you
 
@@ -52,19 +52,22 @@ make fclean   # remove objects + binary
 ### Examples
 
 ```bash
-# 1 coder, easy — should complete 3 compiles without burning out
-./codexion 1 800 200 200 200 3 0 fifo
+# 1 A single coder has a single dongle but needs two to compile
+./codexion 1 800 200 200 200 10 0 fifo
 
-# 4 coders, FIFO, no cooldown
-./codexion 4 800 200 200 200 5 0 fifo
+# 2 No coder should burn out (No cooldown, FIFO)
+./codexion 5 2000 200 200 200 10 0 fifo
 
-# 4 coders, EDF, 50 ms cooldown
-./codexion 4 800 200 200 200 5 50 edf
+# 3 No coder should burn out (No cooldown, EDF)
+./codexion 5 2000 200 200 200 7 0 edf
 
-# Tight timing — should survive without burnout
-./codexion 5 310 200 100 100 5 0 fifo
+# 4 A coder MUST burn out (around timestamp 500)
+./codexion 5 500 200 200 200 10 0 fifo
 
-# Invalid args — must print error and exit 1
+# 5 No coder should burn out (Cooldown check)
+./codexion 5 3000 200 200 200 10 400 fifo
+
+# 5 Invalid args — must print error and exit 1
 ./codexion -1 800 200 200 200 5 0 fifo
 ./codexion 4 800 200 200 200 5 0 random
 ```
@@ -159,17 +162,21 @@ Coder threads check `sim_is_stopped()` at every state-machine boundary
 
 ### Concurrency references
 
-- W. Richard Stevens — *Advanced Programming in the UNIX Environment* (chapters on threads)
+- https://www.youtube.com/playlist?list=PLfqABt5AS4FmuQf70psXrsMLEDQXNkLq2
+- https://www.youtube.com/watch?v=mvZKu0DfFLQ
+- https://www.youtube.com/watch?v=uss88H73P2A
+- https://www.youtube.com/playlist?list=PLBlnK6fEyqRh5YXKAPCZPVZPkdhQa9Skz
 - Maurice J. Bach — *The Design of the UNIX Operating System*
-- Dijkstra, E. W. (1965) — *Solution of a problem in concurrent programming control*
-  (the original dining philosophers paper)
-- POSIX threads programming: <https://hpc-tutorials.llnl.gov/posix/>
 - GNU libc manual — `pthread_cond_timedwait`:
   <https://www.gnu.org/software/libc/manual/html_node/Waiting-with-Explicit-Clocks.html>
+- Dijkstra, E. W. (1965) — *Solution of a problem in concurrent programming control*
+  (the original dining philosophers paper)
+- https://hoangvankhoa.medium.com/introduction-to-multithreading-in-c-c-adf7ffbe045d
 - Coffman conditions (Wikipedia):
   <https://en.wikipedia.org/wiki/Deadlock#Coffman_conditions>
 - Earliest Deadline First scheduling (Wikipedia):
   <https://en.wikipedia.org/wiki/Earliest_deadline_first_scheduling>
+- https://dev.to/turalsuleymani/resolving-race-conditions-and-critical-sections-in-c-1f24
 
 ### AI usage
 
