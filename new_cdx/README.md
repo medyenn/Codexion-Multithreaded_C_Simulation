@@ -176,9 +176,5 @@ Coder threads check `sim_is_stopped()` at every state-machine boundary
 AI was used for:
 - **Design review**: verifying that the resource-ordering deadlock-prevention
   strategy was correctly applied to a circular layout.
-- **Edge-case enumeration**: identifying single-coder and `compiles_required == 0`
-  corner cases.
-- **Code review pass**: checking for missing `pthread_mutex_unlock` on error paths.
-
-All generated suggestions were manually reviewed, tested, and adapted.
-The final code and architecture decisions are the author's own.
+- **Project Architecture**
+- **Pthread Library Understanding**
